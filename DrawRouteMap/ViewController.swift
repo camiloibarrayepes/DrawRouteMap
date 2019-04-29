@@ -21,7 +21,7 @@ class customPin: NSObject, MKAnnotation {
     }
 }
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, MKMapViewDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
     override func viewDidLoad() {
@@ -36,9 +36,45 @@ class ViewController: UIViewController {
         self.mapView.addAnnotation(sourcePin)
         self.mapView.addAnnotation(destinationPin)
         
+        let sourcePlaceMark = MKPlacemark(coordinate: sourceLocation)
+        let destinationPlaceMark = MKPlacemark(coordinate: destinationLocation)
+        
+        let directionRequest = MKDirections.Request()
+        directionRequest.source = MKMapItem(placemark: sourcePlaceMark)
+        directionRequest.destination = MKMapItem(placemark: destinationPlaceMark)
+        directionRequest.transportType = .automobile
+        
+        let directions = MKDirections(request: directionRequest)
+        directions.calculate{
+            (response, error) in
+            guard let directionResponse = response else {
+                if error != nil {
+                    print("Error")
+                }
+                return
+            }
+            
+            let route = directionResponse.routes[0]
+            self.mapView.addOverlay(route.polyline, level: .aboveRoads)
+            
+            let rect = route.polyline.boundingMapRect
+            self.mapView.setRegion(MKCoordinateRegion(rect), animated: true)
+        }
+        
+        self.mapView.delegate = self
         
     }
+    
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) ->
+        MKOverlayRenderer{
+            let renderer = MKPolylineRenderer(overlay: overlay)
+            renderer.strokeColor = UIColor.blue
+            renderer.lineWidth = 4.0
+            return renderer
+        }
+    }
+    
 
 
-}
+
 
